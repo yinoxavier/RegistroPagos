@@ -1,6 +1,6 @@
 # Registro de pagos · Comunidad Católica Shalom
 
-Página para registrar pagos. Por cada pago se guarda **nombre, correo y monto**, se genera un **recibo en PDF** y se envía por correo desde `Contact@yinosegura.dev` usando [Resend](https://resend.com).
+Página para registrar pagos. Por cada pago se guarda **nombre, correo y monto**, se genera un **recibo en PDF** y se envía por correo desde una cuenta de **Gmail** (gratis, hasta 500 correos al día). También admite [Resend](https://resend.com) con el dominio `yinosegura.dev`.
 
 La página tiene dos secciones, detrás de un inicio de sesión:
 
@@ -13,9 +13,9 @@ La página tiene dos secciones, detrás de un inicio de sesión:
 |---|---|---|
 | `web/` | GitHub Pages | La página (HTML, CSS y JS) |
 | `supabase/migrations/` | Supabase (Postgres) | Tabla `pagos`, solo lectura para usuarios con sesión |
-| `supabase/functions/pagos/` | Supabase Edge Function | Registra el pago, genera el PDF y lo envía con Resend |
+| `supabase/functions/pagos/` | Supabase Edge Function | Registra el pago, genera el PDF y lo envía (Gmail o Resend) |
 
-GitHub Pages solo sirve archivos estáticos, por eso los datos y el envío del correo están en Supabase. La clave de Resend queda guardada como secreto en Supabase, nunca en la página.
+GitHub Pages solo sirve archivos estáticos, por eso los datos y el envío del correo están en Supabase. Las claves de correo quedan guardadas como secretos en Supabase, nunca en la página.
 
 ## Puesta en marcha
 
@@ -32,18 +32,29 @@ GitHub Pages solo sirve archivos estáticos, por eso los datos y el envío del c
 
    | Secreto | Valor |
    |---|---|
-   | `RESEND_API_KEY` | Clave de API de Resend (paso 2) |
-   | `EMAIL_REMITENTE` | Opcional. Por defecto `Contact@yinosegura.dev` |
+   | `GMAIL_USER` | La cuenta de Gmail que envía (paso 2) |
+   | `GMAIL_APP_PASSWORD` | Su contraseña de aplicación de 16 letras (paso 2) |
+   | `RESEND_API_KEY` | Solo si usas Resend en lugar de Gmail |
    | `ORIGEN_PERMITIDO` | Opcional. Por defecto `https://yinoxavier.github.io` |
+
+   Si están los dos secretos de Gmail se usa Gmail; si no, Resend.
 
 6. **Project Settings → API Keys**: copia la URL del proyecto y la **publishable key** en `web/config.js` y súbelo a GitHub.
 
-### 2. Resend (envío de correo)
+### 2. Correo de envío con Gmail (gratis)
 
-1. Crea una cuenta gratis en <https://resend.com> (3,000 correos al mes, 100 al día).
-2. **Domains → Add Domain** → `yinosegura.dev`.
-3. Copia los registros DNS que muestra Resend (DKIM, SPF/MX del subdominio `send` y opcionalmente DMARC) en el panel DNS de tu dominio y pulsa **Verify**. Estos registros no afectan el correo que ya recibes en `Contact@yinosegura.dev`.
-4. **API Keys → Create API Key** con permiso *Sending access* → guárdala como secreto `RESEND_API_KEY` en Supabase.
+1. Crea una cuenta nueva en <https://accounts.google.com/signup> (por ejemplo `recibos.shalom@gmail.com`).
+2. **Cuenta de Google → Seguridad → Verificación en dos pasos** → actívala.
+3. Entra a <https://myaccount.google.com/apppasswords>, escribe un nombre (`Registro de pagos`) y pulsa **Crear**. Copia la contraseña de 16 letras.
+4. Guarda `GMAIL_USER` y `GMAIL_APP_PASSWORD` como secretos en Supabase.
+
+Límite de Gmail: unos 500 correos al día. La función usa el puerto 465, porque Supabase bloquea el 25 y el 587.
+
+#### Alternativa: Resend con tu dominio
+
+1. Cuenta gratis en <https://resend.com> (3,000 correos al mes, 100 al día).
+2. **Domains → Add Domain** → `yinosegura.dev`, copia los registros DNS en tu dominio y pulsa **Verify**.
+3. **API Keys → Create API Key** → guárdala como secreto `RESEND_API_KEY` (y `EMAIL_REMITENTE`, por defecto `Contact@yinosegura.dev`).
 
 ### 3. GitHub Pages
 
@@ -52,7 +63,7 @@ Cada cambio en `web/` se publica solo con el workflow `.github/workflows/pages.y
 ## Pruebas
 
 ```bash
-deno test --allow-env --allow-write supabase/functions/pagos
+deno test --allow-env --allow-write --allow-read --allow-sys supabase/functions/pagos
 ```
 
 ## Función `pagos`

@@ -1,7 +1,30 @@
-// Pruebas locales: deno test --allow-env --allow-write supabase/functions/pagos
+// Pruebas locales: deno test --allow-env --allow-write --allow-read --allow-sys supabase/functions/pagos
 import { deepStrictEqual as assertEquals } from 'node:assert';
 import { validarPago } from './validar.ts';
 import { formatearMonto, generarRecibo, numeroRecibo } from './recibo.ts';
+import { armarMensaje, datosNodemailer } from './correo.ts';
+import nodemailer from 'npm:nodemailer@6.10.1';
+
+Deno.test('arma el correo con el PDF adjunto (formato Gmail/SMTP)', async () => {
+  const pdf = await generarRecibo({
+    id: 7, nombre: 'José <Pérez>', correo: 'jose@example.com',
+    monto_centavos: 1000, fecha: '2026-10-21T05:55:44Z',
+  });
+  const m = armarMensaje({
+    id: 7, nombre: 'José <Pérez>', correo: 'jose@example.com',
+    monto_centavos: 1000, fecha: '2026-10-21T05:55:44Z',
+  }, pdf);
+  assertEquals(m.html.includes('José &lt;Pérez&gt;'), true);
+
+  const t = nodemailer.createTransport({ streamTransport: true, buffer: true });
+  const info = await t.sendMail(datosNodemailer(m, 'recibos@gmail.com'));
+  const raw = info.message.toString();
+  assertEquals(raw.includes('filename=recibo-000007.pdf'), true);
+  assertEquals(raw.includes('Content-Type: application/pdf'), true);
+  assertEquals(/From: =\?UTF-8\?.*<recibos@gmail\.com>/.test(raw), true);
+  const salida = Deno.env.get('CORREO_SALIDA');
+  if (salida) await Deno.writeTextFile(salida, raw);
+});
 
 Deno.test('valida y normaliza un pago correcto', () => {
   const r = validarPago({ nombre: '  María   José ', correo: 'Maria@Example.com', monto: '25,5' });
