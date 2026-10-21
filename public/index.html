@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registro de pagos</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <main>
+    <section class="tarjeta" aria-labelledby="t-listado">
+      <h1 id="t-listado">Listado de personas y montos</h1>
+      <div class="tabla-envoltura">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th class="col-correo">Correo</th>
+              <th class="num">Monto</th>
+              <th>Recibo</th>
+            </tr>
+          </thead>
+          <tbody id="filas"></tbody>
+        </table>
+      </div>
+      <p id="vacio" class="vacio" hidden>Aún no hay pagos registrados.</p>
+    </section>
+
+    <section class="tarjeta" aria-labelledby="t-registro">
+      <h2 id="t-registro">Registrar nuevo pago</h2>
+      <form id="formulario" novalidate>
+        <label>Nombre
+          <input name="nombre" autocomplete="name" required maxlength="120">
+        </label>
+        <label>Correo
+          <input name="correo" type="email" autocomplete="email" required maxlength="200">
+        </label>
+        <label>Monto (USD)
+          <input name="monto" inputmode="decimal" placeholder="0.00" required>
+        </label>
+        <button type="submit">Registrar pago</button>
+        <p id="mensaje" class="mensaje" role="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
