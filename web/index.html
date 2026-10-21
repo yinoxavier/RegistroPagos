@@ -3,11 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
   <title>Registro de pagos</title>
   <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
-  <main>
+  <section id="login" class="tarjeta login" hidden>
+    <h1>Ingresar</h1>
+    <p>Acceso solo para el equipo.</p>
+    <form id="form-login">
+      <label>Correo
+        <input name="email" type="email" autocomplete="username" required>
+      </label>
+      <label>Contraseña
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">Entrar</button>
+      <p id="mensaje-login" class="mensaje" role="status"></p>
+    </form>
+  </section>
+
+  <main id="app" hidden>
     <section class="tarjeta" aria-labelledby="t-listado">
       <h1 id="t-listado">Listado de personas y montos</h1>
       <div class="tabla-envoltura">
@@ -30,10 +46,10 @@
       <h2 id="t-registro">Registrar nuevo pago</h2>
       <form id="formulario" novalidate>
         <label>Nombre
-          <input name="nombre" autocomplete="name" required maxlength="120">
+          <input name="nombre" autocomplete="off" required maxlength="120">
         </label>
         <label>Correo
-          <input name="correo" type="email" autocomplete="email" required maxlength="200">
+          <input name="correo" type="email" autocomplete="off" required maxlength="200">
         </label>
         <label>Monto (USD)
           <input name="monto" inputmode="decimal" placeholder="0.00" required>
@@ -42,8 +58,10 @@
         <p id="mensaje" class="mensaje" role="status"></p>
       </form>
     </section>
+
+    <p class="pie"><button type="button" id="salir" class="enlace">Cerrar sesión</button></p>
   </main>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
