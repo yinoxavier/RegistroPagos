@@ -13,15 +13,10 @@ create table if not exists public.pagos (
 
 create index if not exists pagos_fecha_idx on public.pagos (fecha desc);
 
--- Seguridad: solo usuarios con sesión pueden ver los pagos.
--- Nadie escribe desde el navegador: los registros los crea la función "pagos".
+-- Seguridad: con RLS activo y solo esta regla de lectura, nadie escribe desde el navegador.
+-- Los registros los crea la función "pagos" con la clave secreta.
 alter table public.pagos enable row level security;
 
-revoke all on public.pagos from anon;
-revoke insert, update, delete on public.pagos from authenticated;
-grant select on public.pagos to authenticated;
-
-drop policy if exists "Usuarios con sesión pueden ver pagos" on public.pagos;
 create policy "Usuarios con sesión pueden ver pagos"
   on public.pagos for select
   to authenticated

@@ -9,7 +9,7 @@ import { generarRecibo, numeroRecibo, type Pago } from './recibo.ts';
 import { enviarRecibo } from './correo.ts';
 import { validarPago } from './validar.ts';
 
-const ORIGEN = Deno.env.get('ORIGEN_PERMITIDO') ?? '*';
+const ORIGEN = Deno.env.get('ORIGEN_PERMITIDO') ?? 'https://yinoxavier.github.io';
 const cors = {
   'Access-Control-Allow-Origin': ORIGEN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
