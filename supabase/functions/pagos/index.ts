@@ -1,4 +1,4 @@
-// Función "pagos": registra un pago, genera el recibo PDF y lo envía por Outlook.
+// Función "pagos": registra un pago, genera el recibo PDF y lo envía por correo.
 //
 // Acciones (POST con JSON y la sesión del usuario en Authorization):
 //   { accion: "registrar", nombre, correo, monto }

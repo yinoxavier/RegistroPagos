@@ -1,6 +1,6 @@
 # Registro de pagos · Comunidad Católica Shalom
 
-Página para registrar pagos. Por cada pago se guarda **nombre, correo y monto**, se genera un **recibo en PDF** y se envía por correo desde `Juventudpanama@comshalom.com` (Outlook / Microsoft 365).
+Página para registrar pagos. Por cada pago se guarda **nombre, correo y monto**, se genera un **recibo en PDF** y se envía por correo desde `Contact@yinosegura.dev` usando [Resend](https://resend.com).
 
 La página tiene dos secciones, detrás de un inicio de sesión:
 
@@ -13,9 +13,9 @@ La página tiene dos secciones, detrás de un inicio de sesión:
 |---|---|---|
 | `web/` | GitHub Pages | La página (HTML, CSS y JS) |
 | `supabase/migrations/` | Supabase (Postgres) | Tabla `pagos`, solo lectura para usuarios con sesión |
-| `supabase/functions/pagos/` | Supabase Edge Function | Registra el pago, genera el PDF y lo envía por Microsoft Graph |
+| `supabase/functions/pagos/` | Supabase Edge Function | Registra el pago, genera el PDF y lo envía con Resend |
 
-GitHub Pages solo sirve archivos estáticos, por eso los datos y el envío del correo están en Supabase. Las claves de Microsoft quedan guardadas como secretos en Supabase, nunca en la página.
+GitHub Pages solo sirve archivos estáticos, por eso los datos y el envío del correo están en Supabase. La clave de Resend queda guardada como secreto en Supabase, nunca en la página.
 
 ## Puesta en marcha
 
@@ -32,24 +32,18 @@ GitHub Pages solo sirve archivos estáticos, por eso los datos y el envío del c
 
    | Secreto | Valor |
    |---|---|
-   | `MS_TENANT_ID` | Id. de directorio (paso 2) |
-   | `MS_CLIENT_ID` | Id. de aplicación (paso 2) |
-   | `MS_CLIENT_SECRET` | Secreto de cliente (paso 2) |
-   | `EMAIL_REMITENTE` | `Juventudpanama@comshalom.com` |
-   | `ORIGEN_PERMITIDO` | `https://yinoxavier.github.io` |
+   | `RESEND_API_KEY` | Clave de API de Resend (paso 2) |
+   | `EMAIL_REMITENTE` | Opcional. Por defecto `Contact@yinosegura.dev` |
+   | `ORIGEN_PERMITIDO` | Opcional. Por defecto `https://yinoxavier.github.io` |
 
 6. **Project Settings → API Keys**: copia la URL del proyecto y la **publishable key** en `web/config.js` y súbelo a GitHub.
 
-### 2. Outlook (Microsoft 365)
+### 2. Resend (envío de correo)
 
-Microsoft 365 ya no acepta envío SMTP con usuario y contraseña, por eso se usa **Microsoft Graph**. Lo hace un administrador del dominio `comshalom.com`:
-
-1. <https://entra.microsoft.com> → **Aplicaciones** → **Registros de aplicaciones** → **Nuevo registro** (`Registro de pagos`).
-2. Copia el **Id. de aplicación (cliente)** y el **Id. de directorio (inquilino)**.
-3. **Certificados y secretos** → **Nuevo secreto de cliente** → copia el *Valor*.
-4. **Permisos de API** → **Microsoft Graph** → **Permisos de aplicación** → `Mail.Send` → **Conceder consentimiento de administrador**.
-
-> Recomendado: limitar la app para que solo pueda enviar desde `Juventudpanama@comshalom.com` (Exchange Online → *RBAC for Applications*).
+1. Crea una cuenta gratis en <https://resend.com> (3,000 correos al mes, 100 al día).
+2. **Domains → Add Domain** → `yinosegura.dev`.
+3. Copia los registros DNS que muestra Resend (DKIM, SPF/MX del subdominio `send` y opcionalmente DMARC) en el panel DNS de tu dominio y pulsa **Verify**. Estos registros no afectan el correo que ya recibes en `Contact@yinosegura.dev`.
+4. **API Keys → Create API Key** con permiso *Sending access* → guárdala como secreto `RESEND_API_KEY` en Supabase.
 
 ### 3. GitHub Pages
 
