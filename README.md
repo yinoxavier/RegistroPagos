@@ -13,7 +13,7 @@ La página (detrás de un inicio de sesión) tiene:
 | Tipo | Meta | Hoja |
 |---|---|---|
 | Servidor | $59 | [Servidores](https://docs.google.com/spreadsheets/d/1kzidEepJiatmbaPzvl_vYDb9YV0mQ4D07ePCk2SoR-4/edit) |
-| Participante | $65 | [Participantes](https://docs.google.com/spreadsheets/d/1ziK2nA2ljo0nfoHGnXSB4FmiyEHpPuynnv6QgrXkNuU/edit) |
+| Participante | $65 | [Participantes](https://docs.google.com/spreadsheets/d/18RqPzRz_l3pzfRHIs0Ad17i1vZ9dlipj5WxjrvinYYM/edit) |
 
 - Las hojas deben estar compartidas como **"Cualquier persona con el enlace"** (lector).
 - Se reconocen las columnas por su título: *Nombre completo*, *Correo electrónico*, *Cédula*, *WhatsApp*.
