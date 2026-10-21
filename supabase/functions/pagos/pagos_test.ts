@@ -103,3 +103,12 @@ Deno.test('lee la hoja de Servidores (sin correo todavía) y omite filas vacías
   const v = validarImportacion(filas);
   assertEquals(v.omitidas[0].motivo, 'Falta el correo.');
 });
+
+Deno.test('lee la hoja nueva de Servidores (correo al final)', () => {
+  const csv = 'Fecha de registro,Nombre completo,Cédula,WhatsApp,¿Cómo vas a llegar a la finca?,Grupo de oración / pastoral / movimiento,¿Estás sirviendo?,Equipo o servicio,Enfermedad / medicamentos,Alergias / intolerancias,Forma de pago,Comprobante de pago,¿Cédula repetida?,Correo electrónico\n' +
+    '21/10/2026 14:10:00,Ana Ruiz,8-111-2222,60001111,En bus,Cal,Sí,Cocina,,,Yappy,,,Ana.Ruiz@Example.com\n';
+  const { columnas, filas } = leerInscripciones(csv);
+  assertEquals(columnas, { nombre: 1, apellido: -1, correo: 13, cedula: 2, whatsapp: 3 });
+  const v = validarImportacion(filas);
+  assertEquals(v.validas, [{ nombre: 'Ana Ruiz', correo: 'ana.ruiz@example.com', cedula: '8-111-2222', whatsapp: '60001111' }]);
+});
