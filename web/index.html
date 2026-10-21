@@ -18,49 +18,109 @@
       <label>Contraseña
         <input name="password" type="password" autocomplete="current-password" required>
       </label>
-      <button type="submit">Entrar</button>
+      <button type="submit" class="primario">Entrar</button>
       <p id="mensaje-login" class="mensaje" role="status"></p>
     </form>
   </section>
 
-  <main id="app" hidden>
-    <section class="tarjeta" aria-labelledby="t-listado">
-      <h1 id="t-listado">Listado de personas y montos</h1>
-      <div class="tabla-envoltura">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th class="col-correo">Correo</th>
-              <th class="num">Monto</th>
-              <th>Recibo</th>
-            </tr>
-          </thead>
-          <tbody id="filas"></tbody>
-        </table>
+  <div id="app" hidden>
+    <header class="barra">
+      <strong>Registro de pagos</strong>
+      <button type="button" id="salir" class="enlace">Cerrar sesión</button>
+    </header>
+
+    <main>
+      <!-- ARRIBA: nuevo pago y personas registradas -->
+      <div class="arriba">
+        <section class="tarjeta" aria-labelledby="t-pago">
+          <h1 id="t-pago">Nuevo pago</h1>
+          <form id="form-pago" novalidate>
+            <div class="buscador">
+              <label for="buscar-persona">Persona</label>
+              <input id="buscar-persona" type="search" autocomplete="off" placeholder="Busca por nombre, correo o cédula"
+                     role="combobox" aria-expanded="false" aria-controls="resultados-persona">
+              <ul id="resultados-persona" class="resultados" role="listbox" hidden></ul>
+            </div>
+
+            <div id="persona-elegida" class="elegida" hidden>
+              <div class="elegida-cabeza">
+                <div>
+                  <strong id="elegida-nombre"></strong>
+                  <span id="elegida-tipo" class="insignia"></span>
+                  <small id="elegida-correo"></small>
+                </div>
+                <button type="button" id="quitar-persona" class="enlace">Cambiar</button>
+              </div>
+              <div class="barra-avance"><span id="elegida-barra"></span></div>
+              <small id="elegida-texto"></small>
+            </div>
+
+            <label>Monto (USD)
+              <div class="fila-monto">
+                <input name="monto" id="monto" inputmode="decimal" placeholder="0.00" required>
+                <button type="button" id="pagar-saldo" class="secundario" hidden></button>
+              </div>
+            </label>
+            <button type="submit" class="primario">Registrar pago y enviar recibo</button>
+            <p id="mensaje-pago" class="mensaje" role="status"></p>
+          </form>
+        </section>
+
+        <section class="tarjeta" aria-labelledby="t-personas">
+          <h2 id="t-personas">Personas registradas</h2>
+          <div class="conteos" id="conteos"></div>
+
+          <button type="button" id="sincronizar" class="secundario ancho">Sincronizar inscripciones</button>
+          <small id="ultima-sync" class="suave"></small>
+          <div id="resultado-sync" class="resultado-sync" role="status"></div>
+
+          <details class="plegable">
+            <summary>Agregar persona manualmente</summary>
+            <form id="form-persona" novalidate>
+              <label>Nombre completo
+                <input name="nombre" required maxlength="120" autocomplete="off">
+              </label>
+              <label>Correo
+                <input name="correo" type="email" required maxlength="200" autocomplete="off">
+              </label>
+              <label>Tipo
+                <select name="tipo" id="tipo-persona" required></select>
+              </label>
+              <button type="submit" class="secundario">Agregar</button>
+              <p id="mensaje-persona" class="mensaje" role="status"></p>
+            </form>
+          </details>
+
+          <details class="plegable">
+            <summary>Hojas de inscripción</summary>
+            <div id="hojas"></div>
+          </details>
+        </section>
       </div>
-      <p id="vacio" class="vacio" hidden>Aún no hay pagos registrados.</p>
-    </section>
 
-    <section class="tarjeta" aria-labelledby="t-registro">
-      <h2 id="t-registro">Registrar nuevo pago</h2>
-      <form id="formulario" novalidate>
-        <label>Nombre
-          <input name="nombre" autocomplete="off" required maxlength="120">
-        </label>
-        <label>Correo
-          <input name="correo" type="email" autocomplete="off" required maxlength="200">
-        </label>
-        <label>Monto (USD)
-          <input name="monto" inputmode="decimal" placeholder="0.00" required>
-        </label>
-        <button type="submit">Registrar pago</button>
-        <p id="mensaje" class="mensaje" role="status"></p>
-      </form>
-    </section>
+      <!-- ABAJO: listado con avance -->
+      <section class="tarjeta" aria-labelledby="t-listado">
+        <div class="listado-cabeza">
+          <h2 id="t-listado">Listado de personas</h2>
+          <p id="totales" class="totales"></p>
+        </div>
 
-    <p class="pie"><button type="button" id="salir" class="enlace">Cerrar sesión</button></p>
-  </main>
+        <div class="filtros">
+          <input id="filtro-texto" type="search" placeholder="Buscar en el listado" autocomplete="off">
+          <div class="chips" role="group" aria-label="Tipo" id="filtro-tipo"></div>
+          <select id="filtro-estado" aria-label="Estado">
+            <option value="todos">Todos</option>
+            <option value="pendientes">Con saldo pendiente</option>
+            <option value="completos">Completos</option>
+            <option value="sin-pagos">Sin pagos</option>
+          </select>
+        </div>
+
+        <ul id="personas" class="personas"></ul>
+        <p id="vacio" class="vacio" hidden></p>
+      </section>
+    </main>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>

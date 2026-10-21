@@ -6,9 +6,19 @@ export interface Pago {
   correo: string;
   monto_centavos: number;
   fecha: string;
+  persona_id?: number;
   estado_correo?: string;
   error_correo?: string | null;
 }
+
+/** Avance de la persona al momento de este pago (para el recibo y el correo). */
+export interface Avance {
+  tipoNombre: string;
+  metaCentavos: number;
+  acumuladoCentavos: number; // suma de pagos hasta este, incluido
+}
+
+export const saldo = (a: Avance) => Math.max(a.metaCentavos - a.acumuladoCentavos, 0);
 
 export const ORGANIZACION = Deno.env.get('ORG_NOMBRE') ?? 'Comunidad Católica Shalom';
 const ZONA = Deno.env.get('ZONA_HORARIA') ?? 'America/Panama';
@@ -46,7 +56,7 @@ const NEGRO = rgb(0, 0, 0);
 const BLANCO = rgb(1, 1, 1);
 
 /** Genera el recibo de un pago como PDF (tamaño carta). */
-export async function generarRecibo(pago: Pago): Promise<Uint8Array> {
+export async function generarRecibo(pago: Pago, avance?: Avance): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.setTitle(`Recibo ${numeroRecibo(pago.id)}`);
   pdf.setAuthor(ORGANIZACION);
@@ -101,7 +111,27 @@ export async function generarRecibo(pago: Pago): Promise<Uint8Array> {
   page.drawText(formatearMonto(pago.monto_centavos), {
     x: M + 18, y: top(y + 32, 24), size: 24, font: negrita, color: AZUL,
   });
-  y += 110;
+  y += 100;
+
+  // Avance hacia la meta
+  if (avance) {
+    const filas: [string, string][] = [
+      ['Tipo', avance.tipoNombre],
+      ['Meta', formatearMonto(avance.metaCentavos)],
+      ['Total abonado', formatearMonto(avance.acumuladoCentavos)],
+      ['Saldo pendiente', saldo(avance) === 0 ? 'Pagado completo' : formatearMonto(saldo(avance))],
+    ];
+    for (const [etiqueta, valor] of filas) {
+      page.drawText(etiqueta, { x: M, y: top(y, 11), size: 11, font: normal, color: GRIS });
+      page.drawText(valor, { x: derecha(valor, 11, negrita), y: top(y, 11), size: 11, font: negrita, color: NEGRO });
+      y += 22;
+    }
+    // Barra de progreso
+    const pct = Math.min(avance.acumuladoCentavos / avance.metaCentavos, 1);
+    page.drawRectangle({ x: M, y: H - y - 8, width: ancho, height: 8, color: LINEA });
+    if (pct > 0) page.drawRectangle({ x: M, y: H - y - 8, width: ancho * pct, height: 8, color: AZUL });
+    y += 34;
+  }
 
   page.drawText(
     `Gracias por su aporte. Este documento certifica que ${ORGANIZACION} recibió el pago indicado.`,

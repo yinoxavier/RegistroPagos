@@ -1,5 +1,5 @@
 import nodemailer from 'npm:nodemailer@6.10.1';
-import { ORGANIZACION, formatearMonto, numeroRecibo, type Pago } from './recibo.ts';
+import { ORGANIZACION, formatearMonto, numeroRecibo, saldo, type Avance, type Pago } from './recibo.ts';
 
 // Proveedor de correo (se usa el primero que esté configurado):
 //   1. Gmail:  GMAIL_USER + GMAIL_APP_PASSWORD (contraseña de aplicación de Google)
@@ -15,8 +15,16 @@ export interface Mensaje {
   adjunto: { nombre: string; contenido: Uint8Array };
 }
 
-export function armarMensaje(pago: Pago, pdf: Uint8Array): Mensaje {
+export function armarMensaje(pago: Pago, pdf: Uint8Array, avance?: Avance): Mensaje {
   const numero = numeroRecibo(pago.id);
+  let resumen = '';
+  if (avance) {
+    const pendiente = saldo(avance);
+    resumen = pendiente === 0
+      ? `<p>Con este pago completaste tu aporte de ${formatearMonto(avance.metaCentavos)}. ¡Muchas gracias!</p>`
+      : `<p>Llevas abonado ${formatearMonto(avance.acumuladoCentavos)} de ${formatearMonto(avance.metaCentavos)}.
+           Saldo pendiente: <strong>${formatearMonto(pendiente)}</strong>.</p>`;
+  }
   return {
     para: pago.correo,
     asunto: `Recibo de pago N.º ${numero} - ${ORGANIZACION}`,
@@ -24,6 +32,7 @@ export function armarMensaje(pago: Pago, pdf: Uint8Array): Mensaje {
       <p>Hola ${escapar(pago.nombre)},</p>
       <p>Hemos recibido tu pago por <strong>${formatearMonto(pago.monto_centavos)}</strong>.
          Adjuntamos tu recibo N.º ${numero}.</p>
+      ${resumen}
       <p>¡Gracias!<br>${escapar(ORGANIZACION)}</p>`,
     adjunto: { nombre: `recibo-${numero}.pdf`, contenido: pdf },
   };
@@ -91,8 +100,8 @@ async function enviarConResend(m: Mensaje, apiKey: string) {
 }
 
 /** Envía el recibo en PDF. Lanza error si falla o si no hay proveedor configurado. */
-export async function enviarRecibo(pago: Pago, pdf: Uint8Array): Promise<void> {
-  const mensaje = armarMensaje(pago, pdf);
+export async function enviarRecibo(pago: Pago, pdf: Uint8Array, avance?: Avance): Promise<void> {
+  const mensaje = armarMensaje(pago, pdf, avance);
 
   const gmailUser = Deno.env.get('GMAIL_USER');
   const gmailClave = Deno.env.get('GMAIL_APP_PASSWORD');
