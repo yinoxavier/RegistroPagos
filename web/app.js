@@ -19,7 +19,8 @@ const estado = {
   elegida: null,           // persona elegida para el pago
   abiertas: new Set(),     // personas con historial desplegado
   filtroTipo: 'todos',
-  pagos: [],               // todos los pagos (para resumen y Excel)
+  pagos: [],               // todos los pagos (para el resumen)
+  drive: {},               // estado de la hoja de Google Drive
   vista: 'pago',
 };
 
@@ -110,10 +111,11 @@ async function llamarFuncion(cuerpo) {
 /* ================= Carga de datos ================= */
 
 async function cargar() {
-  const [personas, tipos, pagos] = await Promise.all([
+  const [personas, tipos, pagos, ajustes] = await Promise.all([
     supabase.from('personas_resumen').select('*').order('nombre'),
     supabase.from('tipos').select('*').order('orden'),
     supabase.from('pagos').select('id, persona_id, monto_centavos, fecha, estado_correo').order('id', { ascending: false }),
+    supabase.from('ajustes').select('clave, valor'),
   ]);
   if (personas.error || tipos.error || pagos.error) {
     $('vacio').hidden = false;
@@ -123,6 +125,7 @@ async function cargar() {
   estado.personas = personas.data;
   estado.tipos = tipos.data;
   estado.pagos = pagos.data;
+  estado.drive = Object.fromEntries((ajustes.data ?? []).map((a) => [a.clave, a.valor]));
 
   // Mantener actualizada la persona elegida
   if (estado.elegida) {
@@ -140,6 +143,7 @@ function pintarTodo() {
   pintarElegida();
   pintarListado();
   pintarResumen();
+  pintarDrive();
 }
 
 /* ================= Pestañas ================= */
@@ -299,6 +303,7 @@ $('form-pago').addEventListener('submit', async (e) => {
     }
     estado.abiertas.add(p.id);
     await cargar();
+    refrescarDriveLuego();
   } catch (err) {
     avisar(msg, err.message, 'error');
   } finally {
@@ -395,6 +400,7 @@ $('form-persona').addEventListener('submit', async (e) => {
     e.target.reset();
     avisar(msg, `${persona.nombre} agregado.`, 'ok');
     await cargar();
+    refrescarDriveLuego();
   } catch (err) {
     avisar(msg, err.message, 'error');
   } finally {
@@ -513,6 +519,7 @@ async function cargarHistorial(p, caja) {
         try { await llamarFuncion({ accion: 'reenviar', id: g.id }); }
         catch (err) { alert(err.message); }
         cargarHistorial(p, caja);
+        refrescarDriveLuego();
       },
     }) : null;
 
@@ -625,104 +632,79 @@ function pintarResumen() {
   }));
 }
 
-/* ================= Excel ================= */
+/* ================= Hoja de Google Drive ================= */
 
-const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
-const FMT_DINERO = '"$"#,##0.00';
-const FMT_FECHA = 'dd/mm/yyyy hh:mm';
+function pintarDrive() {
+  const d = estado.drive;
+  const abrir = $('abrir-drive');
+  abrir.hidden = !d.drive_hoja_url;
+  if (d.drive_hoja_url) abrir.href = d.drive_hoja_url;
+  $('actualizar-drive').hidden = !d.drive_hoja_url;
+  // Ya conectada: el cuadro va al final y sirve para cambiar la hoja
+  const caja = $('conectar-drive');
+  $('titulo-conectar').textContent = d.drive_hoja_url ? 'Cambiar la hoja de Google Drive' : 'Conectar hoja de Google Drive';
+  if (d.drive_hoja_url && caja.nextElementSibling) $('vista-resumen').append(caja);
 
-/** Fecha local → número de serie de Excel (evita desfases de zona horaria). */
-function serialExcel(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const utc = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
-  return utc / 86400000 + 25569;
-}
+  // Abrir el formulario de conexión una sola vez, mientras no haya hoja conectada
+  if (!d.drive_hoja_url && !estado.driveMostrado) {
+    $('conectar-drive').open = true;
+    estado.driveMostrado = true;
+  }
 
-function hojaDesde(XLSX, encabezados, filas, formatos, anchos) {
-  const ws = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
-  // Formato por columna (dinero, porcentaje, fecha)
-  formatos.forEach((fmt, c) => {
-    if (!fmt) return;
-    for (let r = 1; r <= filas.length; r++) {
-      const celda = ws[XLSX.utils.encode_cell({ r, c })];
-      if (celda && celda.v !== '' && celda.v != null) celda.z = fmt;
-    }
-  });
-  ws['!cols'] = anchos.map((wch) => ({ wch }));
-  if (filas.length) ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: filas.length, c: encabezados.length - 1 } }) };
-  return ws;
-}
-
-async function descargarExcel() {
-  const boton = $('descargar-excel');
-  const msg = $('mensaje-excel');
-  boton.disabled = true;
-  boton.textContent = 'Preparando…';
-  avisar(msg, '');
-  try {
-    await cargar(); // datos al día
-    const XLSX = await import(XLSX_URL);
-    const libro = XLSX.utils.book_new();
-    const usd = (c) => Math.round(c) / 100;
-
-    // Resumen
-    const filasResumen = estado.tipos.map((t) => {
-      const r = totalesDe(estado.personas.filter((p) => p.tipo === t.id));
-      return [plural(t.nombre), usd(t.meta_centavos), r.personas, usd(r.meta), usd(r.pagado), usd(r.pendiente),
-        r.meta ? r.pagado / r.meta : 0, r.completos, r.abonando, r.sinPagos];
-    });
-    const tot = totalesDe(estado.personas);
-    filasResumen.push(['Total', '', tot.personas, usd(tot.meta), usd(tot.pagado), usd(tot.pendiente),
-      tot.meta ? tot.pagado / tot.meta : 0, tot.completos, tot.abonando, tot.sinPagos]);
-    XLSX.utils.book_append_sheet(libro, hojaDesde(XLSX,
-      ['Rol', 'Meta por persona', 'Personas', 'Meta total', 'Recaudado', 'Por cobrar', 'Avance', 'Completos', 'Abonando', 'Sin pagos'],
-      filasResumen,
-      [null, FMT_DINERO, null, FMT_DINERO, FMT_DINERO, FMT_DINERO, '0%', null, null, null],
-      [16, 16, 10, 14, 14, 14, 9, 11, 10, 10]), 'Resumen');
-
-    // Una hoja por rol
-    for (const t of estado.tipos) {
-      const filas = estado.personas.filter((p) => p.tipo === t.id).map((p) => [
-        p.nombre, p.correo, p.cedula ?? '', p.whatsapp ?? '',
-        usd(p.meta_centavos), usd(p.pagado_centavos), usd(pendiente(p)),
-        p.meta_centavos ? p.pagado_centavos / p.meta_centavos : 0,
-        estadoPersona(p), p.num_pagos, serialExcel(p.ultimo_pago),
-      ]);
-      XLSX.utils.book_append_sheet(libro, hojaDesde(XLSX,
-        ['Nombre', 'Correo', 'Cédula', 'WhatsApp', 'Meta', 'Pagado', 'Pendiente', 'Avance', 'Estado', 'N.º de pagos', 'Último pago'],
-        filas,
-        [null, null, null, null, FMT_DINERO, FMT_DINERO, FMT_DINERO, '0%', null, null, FMT_FECHA],
-        [32, 32, 14, 13, 10, 10, 11, 9, 11, 12, 17]), plural(t.nombre));
-    }
-
-    // Todos los pagos
-    const porId = new Map(estado.personas.map((p) => [p.id, p]));
-    const filasPagos = [...estado.pagos].reverse().map((g) => {
-      const p = porId.get(g.persona_id);
-      return [String(g.id).padStart(6, '0'), serialExcel(g.fecha), p?.nombre ?? '', p?.tipo_nombre ?? '', p?.correo ?? '',
-        usd(g.monto_centavos), ETIQUETAS[g.estado_correo] ?? g.estado_correo];
-    });
-    XLSX.utils.book_append_sheet(libro, hojaDesde(XLSX,
-      ['Recibo N.º', 'Fecha', 'Nombre', 'Rol', 'Correo', 'Monto', 'Recibo por correo'],
-      filasPagos,
-      [null, FMT_FECHA, null, null, null, FMT_DINERO, null],
-      [11, 17, 32, 13, 32, 10, 17]), 'Pagos');
-
-    const hoy = new Date();
-    const nombre = `registro-pagos-${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}.xlsx`;
-    XLSX.writeFile(libro, nombre, { compression: true });
-    avisar(msg, `Descargado: ${nombre}`, 'ok');
-  } catch (err) {
-    console.error(err);
-    avisar(msg, 'No se pudo generar el Excel. Revisa tu conexión e intenta de nuevo.', 'error');
-  } finally {
-    boton.disabled = false;
-    boton.textContent = 'Descargar Excel';
+  const est = $('estado-drive');
+  est.className = 'estado-drive';
+  if (d.drive_error) {
+    est.classList.add('error');
+    est.textContent = `La hoja de Drive no se pudo actualizar: ${d.drive_error}`;
+  } else if (d.drive_actualizado_en) {
+    est.textContent = `Hoja de Drive actualizada ${hace(d.drive_actualizado_en)}.`;
+  } else {
+    est.textContent = 'La hoja de Google Drive todavía no está conectada.';
   }
 }
 
-$('descargar-excel').addEventListener('click', descargarExcel);
+$('actualizar-drive').addEventListener('click', async (e) => {
+  const boton = e.currentTarget;
+  boton.disabled = true;
+  boton.textContent = 'Actualizando…';
+  try {
+    await llamarFuncion({ accion: 'actualizar_drive' });
+  } catch (err) {
+    // el error queda guardado y se muestra abajo
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Actualizar hoja';
+    await cargar();
+  }
+});
+
+$('form-drive').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('mensaje-drive');
+  const boton = e.target.querySelector('button');
+  boton.disabled = true;
+  avisar(msg, 'Conectando y escribiendo la hoja…');
+  try {
+    await llamarFuncion({ accion: 'configurar_drive', enlace: e.target.enlace.value });
+    avisar(msg, 'Listo: la hoja quedó conectada y actualizada.', 'ok');
+    e.target.reset();
+    $('conectar-drive').open = false;
+    await cargar();
+  } catch (err) {
+    avisar(msg, err.message, 'error');
+  } finally {
+    boton.disabled = false;
+  }
+});
+
+/** Tras un cambio, la hoja se actualiza en segundo plano: refrescar el estado en unos segundos. */
+function refrescarDriveLuego() {
+  if (!estado.drive.drive_hoja_url) return;
+  setTimeout(async () => {
+    const { data } = await supabase.from('ajustes').select('clave, valor');
+    if (data) { estado.drive = Object.fromEntries(data.map((a) => [a.clave, a.valor])); pintarDrive(); }
+  }, 8000);
+}
 
 /* ================= Sesión ================= */
 

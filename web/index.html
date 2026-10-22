@@ -131,9 +131,23 @@
       <section id="vista-resumen" class="vista" aria-labelledby="t-resumen" hidden>
         <div class="resumen-cabeza">
           <h1 id="t-resumen">Resumen</h1>
-          <button type="button" id="descargar-excel" class="primario">Descargar Excel</button>
+          <div class="drive">
+            <a id="abrir-drive" class="primario boton" target="_blank" rel="noopener" hidden>Abrir hoja en Drive</a>
+            <button type="button" id="actualizar-drive" class="secundario" hidden>Actualizar hoja</button>
+          </div>
         </div>
-        <p id="mensaje-excel" class="mensaje" role="status"></p>
+        <p id="estado-drive" class="estado-drive" role="status"></p>
+
+        <details id="conectar-drive" class="tarjeta plegable-tarjeta">
+          <summary id="titulo-conectar">Conectar hoja de Google Drive</summary>
+          <form id="form-drive" novalidate>
+            <label>Enlace de la aplicación web (Apps Script)
+              <input name="enlace" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+            </label>
+            <button type="submit" class="secundario">Conectar</button>
+            <p id="mensaje-drive" class="mensaje" role="status"></p>
+          </form>
+        </details>
 
         <div id="kpis" class="kpis"></div>
         <div id="por-tipo" class="por-tipo"></div>

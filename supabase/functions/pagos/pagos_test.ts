@@ -112,3 +112,31 @@ Deno.test('lee la hoja nueva de Servidores (correo al final)', () => {
   const v = validarImportacion(filas);
   assertEquals(v.validas, [{ nombre: 'Ana Ruiz', correo: 'ana.ruiz@example.com', cedula: '8-111-2222', whatsapp: '60001111' }]);
 });
+
+import { armarHojas } from './drive.ts';
+
+Deno.test('arma las pestañas para la hoja de Drive', () => {
+  const tipos = [{ id: 'servidor', nombre: 'Servidor', meta_centavos: 5900 }, { id: 'participante', nombre: 'Participante', meta_centavos: 6500 }];
+  const P = (id: number, nombre: string, tipo: string, pagado: number, n: number) => ({
+    id, nombre, correo: `${id}@x.com`, tipo, tipo_nombre: tipo === 'servidor' ? 'Servidor' : 'Participante',
+    meta_centavos: tipo === 'servidor' ? 5900 : 6500, pagado_centavos: pagado, num_pagos: n,
+    ultimo_pago: n ? '2026-10-21T15:00:00Z' : null, cedula: null, whatsapp: null,
+  });
+  const personas = [P(1, 'Zoe', 'participante', 6500, 2), P(2, 'Ana', 'participante', 0, 0), P(3, 'Luis', 'servidor', 3000, 1)];
+  const pagos = [
+    { id: 2, persona_id: 1, monto_centavos: 4500, fecha: '2026-10-21T15:00:00Z', estado_correo: 'enviado' },
+    { id: 1, persona_id: 1, monto_centavos: 2000, fecha: '2026-10-20T15:00:00Z', estado_correo: 'error' },
+    { id: 3, persona_id: 3, monto_centavos: 3000, fecha: '2026-10-21T16:00:00Z', estado_correo: 'enviado' },
+  ];
+  const [resumen, hojaPersonas, hojaPagos] = armarHojas(tipos, personas, pagos);
+  assertEquals(resumen.filas.map((f) => f[0]), ['Servidores', 'Participantes', 'Total']);
+  assertEquals(resumen.filas[2].slice(2, 6), [3, 189, 95, 94]);
+  assertEquals(hojaPersonas.filas.map((f) => f[0]), ['Luis', 'Ana', 'Zoe']); // por rol y nombre
+  assertEquals(hojaPersonas.filas[2].slice(9), ['Completo', 2, '2026-10-21T15:00:00Z']);
+  assertEquals(hojaPagos.filas.map((f) => f[0]), ['000001', '000002', '000003']);
+  assertEquals(hojaPagos.filas[0][6], 'No enviado');
+  for (const h of [resumen, hojaPersonas, hojaPagos]) {
+    assertEquals(h.formatos.length, h.encabezados.length);
+    h.filas.forEach((f) => assertEquals(f.length, h.encabezados.length));
+  }
+});

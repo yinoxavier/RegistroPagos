@@ -333,7 +333,13 @@ button:disabled { opacity: .6; cursor: wait; }
 
 .resumen-cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
 .resumen-cabeza h1 { margin: 0; }
-#mensaje-excel:empty { display: none; }
+.drive { display: flex; gap: 8px; flex-wrap: wrap; }
+.boton { display: inline-block; text-decoration: none; text-align: center; }
+.estado-drive { margin: -8px 0 0; font-size: .85rem; color: var(--suave); }
+.estado-drive.error { color: var(--error); }
+.plegable-tarjeta { padding: 16px 22px; }
+.plegable-tarjeta summary { cursor: pointer; color: var(--acento); font-weight: 600; }
+.plegable-tarjeta form { margin-top: 12px; max-width: 560px; }
 
 .kpis { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 900px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

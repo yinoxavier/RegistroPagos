@@ -6,9 +6,24 @@ La página (detrás de un inicio de sesión) tiene tres pestañas:
 
 - **Nuevo pago**: buscas a la persona por nombre, correo o cédula, ves cuánto le falta y registras el monto. No permite pasarse de la meta.
 - **Listado**: todas las personas con su rol, correo y barra de avance; filtros por rol y estado; historial de pagos con PDF y reenvío; botón **Sincronizar inscripciones**, alta manual y enlaces de las hojas.
-- **Resumen**: recaudado, por cobrar, personas y pagos; avance por rol (completos, abonando, sin pagos); últimos pagos; y **Descargar Excel**.
+- **Resumen**: recaudado, por cobrar, personas y pagos; avance por rol (completos, abonando, sin pagos); últimos pagos; y **Abrir hoja en Drive**.
 
-El Excel se genera en el navegador con los datos del momento y trae 4 hojas: *Resumen*, *Servidores*, *Participantes* (meta, pagado, pendiente, avance, estado, n.º de pagos, último pago) y *Pagos* (recibo, fecha, persona, rol, monto y si se envió el recibo).
+## Hoja de Google Drive (se actualiza sola)
+
+Cada vez que se registra un pago, se reenvía un recibo, se agrega una persona o la sincronización trae cambios, la función reescribe una hoja de Google Sheets en Drive con tres pestañas:
+
+- **Resumen**: por rol y total (personas, meta, recaudado, por cobrar, avance, completos, abonando, sin pagos).
+- **Personas**: nombre, rol, correo, cédula, WhatsApp, meta, pagado, pendiente, avance, estado, n.º de pagos y último pago.
+- **Pagos**: recibo, fecha, persona, rol, correo, monto y si se envió el recibo.
+
+Instalación (una vez):
+
+1. Crea una hoja de Google Sheets en Drive.
+2. **Extensiones → Apps Script**, borra lo que haya y pega [`apps-script/Codigo.gs`](apps-script/Codigo.gs). En `TOKEN` pon la clave guardada en Supabase (`select valor from ajustes where clave = 'drive_token'`).
+3. **Implementar → Nueva implementación → Aplicación web**: *Ejecutar como*: Yo · *Quién tiene acceso*: Cualquier usuario. Autoriza el acceso.
+4. Copia la URL de la aplicación web (termina en `/exec`) y pégala en la página: **Resumen → Conectar hoja de Google Drive**.
+
+Cada envío reescribe la hoja completa, así que si alguno falla el siguiente la deja al día. También se puede forzar con **Actualizar hoja** en el Resumen.
 
 ## Inscripciones desde Google Sheets
 
@@ -30,7 +45,8 @@ El Excel se genera en el navegador con los datos del momento y trae 4 hojas: *Re
 |---|---|---|
 | `web/` | GitHub Pages | La página (HTML, CSS y JS) |
 | `supabase/migrations/` | Supabase (Postgres) | Tablas `tipos`, `personas`, `pagos` y vista `personas_resumen`; solo lectura para usuarios con sesión y tope por meta en la base |
-| `supabase/functions/pagos/` | Supabase Edge Function | Registra el pago, genera el PDF y lo envía (Gmail o Resend) |
+| `supabase/functions/pagos/` | Supabase Edge Function | Registra el pago, genera el PDF, lo envía (Gmail o Resend) y actualiza la hoja de Drive |
+| `apps-script/Codigo.gs` | Google Apps Script | Recibe los datos y reescribe la hoja de Google Drive |
 
 GitHub Pages solo sirve archivos estáticos, por eso los datos y el envío del correo están en Supabase. Las claves de correo quedan guardadas como secretos en Supabase, nunca en la página.
 
@@ -43,7 +59,7 @@ GitHub Pages solo sirve archivos estáticos, por eso los datos y el envío del c
 3. **Authentication**:
    - Desactiva **Allow new users to sign up** (nadie puede registrarse solo).
    - En **Users** → **Add user** crea las cuentas del equipo (correo y contraseña, marcando *Auto Confirm*).
-4. **Edge Functions** → crea la función **`pagos`** con los 5 archivos de `supabase/functions/pagos/` (`index.ts`, `recibo.ts`, `correo.ts`, `validar.ts`, `hoja.ts`) y **desactiva "Verify JWT"**: la función comprueba la sesión por su cuenta.
+4. **Edge Functions** → crea la función **`pagos`** con los 6 archivos de `supabase/functions/pagos/` (`index.ts`, `recibo.ts`, `correo.ts`, `validar.ts`, `hoja.ts`, `drive.ts`) y **desactiva "Verify JWT"**: la función comprueba la sesión por su cuenta.
    Con la CLI: `supabase functions deploy pagos --no-verify-jwt --project-ref TU_REF`
 5. **Edge Functions → Secrets**, agrega:
 
@@ -95,3 +111,5 @@ deno test --allow-env --allow-write --allow-read --allow-sys supabase/functions/
 | `{ "accion": "configurar_hoja", "tipo", "enlace" }` | Cambia la hoja de un tipo |
 | `{ "accion": "reenviar", "id" }` | Reintenta el correo |
 | `{ "accion": "recibo", "id" }` | Devuelve el PDF |
+| `{ "accion": "actualizar_drive" }` | Reescribe la hoja de Google Drive |
+| `{ "accion": "configurar_drive", "enlace" }` | Guarda la URL del Apps Script y escribe la hoja |

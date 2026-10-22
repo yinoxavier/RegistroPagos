@@ -7,11 +7,14 @@
 //   { accion: "registrar", persona_id, monto }
 //   { accion: "reenviar", id }
 //   { accion: "recibo", id }   -> devuelve el PDF
+//   { accion: "actualizar_drive" }            -> reescribe la hoja de Google Drive
+//   { accion: "configurar_drive", enlace }    -> guarda el enlace de la aplicación web (Apps Script)
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { formatearMonto, generarRecibo, numeroRecibo, type Avance, type Pago } from './recibo.ts';
 import { enviarRecibo } from './correo.ts';
 import { esTipo, validarImportacion, validarMonto, validarPersona } from './validar.ts';
 import { descargarHoja, idDesdeEnlace, leerInscripciones } from './hoja.ts';
+import { actualizarDrive } from './drive.ts';
 
 const ORIGEN = Deno.env.get('ORIGEN_PERMITIDO') ?? 'https://yinoxavier.github.io';
 const cors = {
@@ -38,6 +41,26 @@ const json = (data: unknown, status = 200) =>
 
 const MAX_IMPORTAR = 3000;
 const NOMBRE_TIPO: Record<string, string> = { servidor: 'Servidor', participante: 'Participante' };
+
+/** Ejecuta una tarea después de responder (la hoja de Drive se actualiza sin hacer esperar). */
+function enSegundoPlano(tarea: Promise<unknown>) {
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+  if (runtime?.waitUntil) runtime.waitUntil(tarea);
+  else tarea.catch(() => {});
+}
+
+const actualizarDriveLuego = () => enSegundoPlano(actualizarDrive(admin));
+
+async function configurarDrive(body: Record<string, unknown>) {
+  const enlace = String(body.enlace ?? '').trim();
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(enlace)) {
+    return json({ errores: ['Pega el enlace de la aplicación web: empieza con https://script.google.com/macros/s/ y termina en /exec.'] }, 400);
+  }
+  await admin.from('ajustes').upsert({ clave: 'drive_script_url', valor: enlace, actualizado: new Date().toISOString() });
+  const r = await actualizarDrive(admin);
+  if (!r.ok) return json({ errores: [`El enlace se guardó, pero la hoja respondió: ${r.error}`] }, 400);
+  return json(r);
+}
 
 async function obtenerPago(id: number): Promise<Pago | null> {
   const { data } = await admin.from('pagos').select('*').eq('id', id).maybeSingle();
@@ -87,6 +110,7 @@ async function crearPersona(body: Record<string, unknown>) {
     return json({ errores: [`Ya hay una persona registrada con el correo ${datos.correo}.`] }, 409);
   }
   if (error || !data) return json({ errores: ['No se pudo guardar la persona.'] }, 500);
+  actualizarDriveLuego();
   return json(data, 201);
 }
 
@@ -134,6 +158,7 @@ async function sincronizar() {
 
   const resultados = [];
   for (const t of tipos) resultados.push(await sincronizarTipo(t));
+  if (resultados.some((r) => r.creadas || r.actualizadas)) actualizarDriveLuego();
   return json({ resultados });
 }
 
@@ -230,7 +255,9 @@ async function registrarPago(body: Record<string, unknown>, usuarioId: string) {
   if (error?.code === 'P0001') return json({ errores: ['El monto supera lo pendiente. Actualiza la página e intenta de nuevo.'] }, 409);
   if (error || !pago) return json({ errores: ['No se pudo guardar el pago.'] }, 500);
 
-  return json(await procesarCorreo(pago), 201);
+  const resultado = await procesarCorreo(pago);
+  actualizarDriveLuego();
+  return json(resultado, 201);
 }
 
 Deno.serve(async (req) => {
@@ -260,8 +287,18 @@ Deno.serve(async (req) => {
     case 'reenviar': {
       const pago = await obtenerPago(Number(body.id));
       if (!pago) return json({ errores: ['Pago no encontrado.'] }, 404);
-      return json(await procesarCorreo(pago));
+      const resultado = await procesarCorreo(pago);
+      actualizarDriveLuego();
+      return json(resultado);
     }
+
+    case 'actualizar_drive': {
+      const r = await actualizarDrive(admin);
+      return r.ok ? json(r) : json({ errores: [r.error ?? 'No se pudo actualizar la hoja.'] }, 400);
+    }
+
+    case 'configurar_drive':
+      return await configurarDrive(body);
 
     case 'recibo': {
       const pago = await obtenerPago(Number(body.id));
