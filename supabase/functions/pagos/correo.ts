@@ -5,6 +5,9 @@ import { ORGANIZACION, formatearMonto, numeroRecibo, saldo, type Avance, type Pa
 //   1. Gmail:  GMAIL_USER + GMAIL_APP_PASSWORD (contraseña de aplicación de Google)
 //   2. Resend: RESEND_API_KEY (+ EMAIL_REMITENTE con dominio verificado)
 
+/** Evento al que corresponden los recibos (se puede cambiar con el secreto EVENTO). */
+export const EVENTO = Deno.env.get('EVENTO') ?? 'Camps 2027';
+
 const escapar = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
@@ -27,12 +30,15 @@ export function armarMensaje(pago: Pago, pdf: Uint8Array, avance?: Avance): Mens
   }
   return {
     para: pago.correo,
-    asunto: `Recibo de pago N.º ${numero} - ${ORGANIZACION}`,
+    asunto: `Recibo de pago N.º ${numero} - ${EVENTO} - ${ORGANIZACION}`,
     html: `
       <p>Hola ${escapar(pago.nombre)},</p>
       <p>Hemos recibido tu pago por <strong>${formatearMonto(pago.monto_centavos)}</strong>.
          Adjuntamos tu recibo N.º ${numero}.</p>
       ${resumen}
+      <p style="padding:10px 12px;background:#f3f6fa;border-left:4px solid #1f3a5f;">
+        <strong>Nota:</strong> este recibo corresponde a tu aporte para el <strong>${escapar(EVENTO)}</strong>.
+      </p>
       <p>¡Gracias!<br>${escapar(ORGANIZACION)}</p>`,
     adjunto: { nombre: `recibo-${numero}.pdf`, contenido: pdf },
   };

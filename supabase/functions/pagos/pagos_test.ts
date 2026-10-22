@@ -59,6 +59,8 @@ Deno.test('arma el correo con el PDF adjunto y el saldo', async () => {
   const m = armarMensaje(pago, pdf, avance);
   assertEquals(m.html.includes('José &lt;Pérez&gt;'), true);
   assertEquals(m.html.includes('Saldo pendiente: <strong>$19.00 USD</strong>'), true);
+  assertEquals(m.html.includes('corresponde a tu aporte para el <strong>Camps 2027</strong>'), true);
+  assertEquals(m.asunto, 'Recibo de pago N.º 000007 - Camps 2027 - Comunidad Católica Shalom');
   const fin = armarMensaje(pago, pdf, { ...avance, acumuladoCentavos: 5900 });
   assertEquals(fin.html.includes('completaste tu aporte'), true);
 
