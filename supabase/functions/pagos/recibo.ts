@@ -21,6 +21,8 @@ export interface Avance {
 export const saldo = (a: Avance) => Math.max(a.metaCentavos - a.acumuladoCentavos, 0);
 
 export const ORGANIZACION = Deno.env.get('ORG_NOMBRE') ?? 'Comunidad Católica Shalom';
+/** Evento al que corresponden los recibos (se puede cambiar con el secreto EVENTO). */
+export const EVENTO = Deno.env.get('EVENTO') ?? 'Camps 2027';
 const ZONA = Deno.env.get('ZONA_HORARIA') ?? 'America/Panama';
 const MONEDA = Deno.env.get('MONEDA') ?? 'USD';
 
@@ -76,7 +78,7 @@ export async function generarRecibo(pago: Pago, avance?: Avance): Promise<Uint8A
   // Encabezado
   page.drawRectangle({ x: 0, y: H - 110, width: W, height: 110, color: AZUL });
   page.drawText(ORGANIZACION, { x: M, y: top(38, 20), size: 20, font: negrita, color: BLANCO });
-  page.drawText('Recibo de pago', { x: M, y: top(68, 11), size: 11, font: normal, color: BLANCO });
+  page.drawText(`Recibo de pago · ${EVENTO}`, { x: M, y: top(68, 11), size: 11, font: normal, color: BLANCO });
 
   // Número y fecha
   const fecha = formatearFecha(pago.fecha);
@@ -101,6 +103,7 @@ export async function generarRecibo(pago: Pago, avance?: Avance): Promise<Uint8A
     }).join('');
   fila('Recibimos de', limpiar(pago.nombre));
   fila('Correo electrónico', limpiar(pago.correo));
+  fila('Concepto', `Aporte para el ${EVENTO}`);
 
   // Monto destacado
   page.drawRectangle({
@@ -134,7 +137,7 @@ export async function generarRecibo(pago: Pago, avance?: Avance): Promise<Uint8A
   }
 
   page.drawText(
-    `Gracias por su aporte. Este documento certifica que ${ORGANIZACION} recibió el pago indicado.`,
+    `Gracias por su aporte. Este documento certifica que ${ORGANIZACION} recibió el pago indicado para el ${EVENTO}.`,
     { x: M, y: top(y, 10), size: 10, font: normal, color: GRIS, maxWidth: ancho, lineHeight: 14 },
   );
 

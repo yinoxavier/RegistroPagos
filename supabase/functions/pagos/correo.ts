@@ -1,12 +1,9 @@
 import nodemailer from 'npm:nodemailer@6.10.1';
-import { ORGANIZACION, formatearMonto, numeroRecibo, saldo, type Avance, type Pago } from './recibo.ts';
+import { EVENTO, ORGANIZACION, formatearMonto, numeroRecibo, saldo, type Avance, type Pago } from './recibo.ts';
 
 // Proveedor de correo (se usa el primero que esté configurado):
 //   1. Gmail:  GMAIL_USER + GMAIL_APP_PASSWORD (contraseña de aplicación de Google)
 //   2. Resend: RESEND_API_KEY (+ EMAIL_REMITENTE con dominio verificado)
-
-/** Evento al que corresponden los recibos (se puede cambiar con el secreto EVENTO). */
-export const EVENTO = Deno.env.get('EVENTO') ?? 'Camps 2027';
 
 const escapar = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
