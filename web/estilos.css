@@ -54,25 +54,49 @@ body {
 
 /* ---------- Estructura ---------- */
 
-.barra {
+.cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--fondo);
+  border-bottom: 1px solid var(--linea);
+}
+.cabecera-fila {
   display: flex;
   justify-content: space-between;
   align-items: center;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 16px 16px 0;
+  padding: 14px 16px 6px;
 }
+.pestanas {
+  display: flex;
+  gap: 4px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 12px;
+  overflow-x: auto;
+}
+.pestanas a {
+  padding: 10px 14px;
+  color: var(--suave);
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+.pestanas a:hover { color: var(--texto); }
+.pestanas a[aria-current="page"] { color: var(--acento); border-bottom-color: var(--acento); }
+.pestanas a:focus-visible { outline: 2px solid var(--acento); outline-offset: -2px; border-radius: 6px; }
 
 main {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 16px 16px 40px;
-  display: grid;
-  gap: 20px;
+  padding: 20px 16px 40px;
 }
+.vista { display: grid; gap: 20px; }
+.angosta { width: 100%; max-width: 620px; margin: 0 auto; }
 
-.arriba { display: grid; gap: 20px; grid-template-columns: 1fr; align-items: start; }
-@media (min-width: 900px) { .arriba { grid-template-columns: 3fr 2fr; } }
 
 .tarjeta {
   background: var(--tarjeta);
@@ -179,18 +203,11 @@ button:disabled { opacity: .6; cursor: wait; }
 
 /* ---------- Personas registradas ---------- */
 
-.conteos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.conteo {
-  border: 1px solid var(--linea);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-.conteo b { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
-.conteo span { display: block; font-size: .85rem; color: var(--suave); }
+.sync { display: grid; gap: 4px; justify-items: end; }
+#ultima-sync { font-size: .8rem; }
 
-#ultima-sync { display: block; margin-top: 6px; font-size: .8rem; }
-
-.resultado-sync { font-size: .85rem; margin-top: 8px; display: grid; gap: 6px; }
+.resultado-sync { font-size: .85rem; margin-bottom: 12px; display: grid; gap: 6px; }
+.resultado-sync:empty { display: none; }
 .resultado-sync .linea { padding: 8px 10px; border-radius: 8px; background: var(--info-fondo); }
 .resultado-sync .linea.error { background: var(--error-fondo); color: var(--error); }
 .resultado-sync .linea.aviso { background: var(--aviso-fondo); color: var(--aviso); }
@@ -199,6 +216,7 @@ button:disabled { opacity: .6; cursor: wait; }
 .plegable { margin-top: 14px; border-top: 1px solid var(--linea); padding-top: 12px; }
 .plegable summary { cursor: pointer; color: var(--acento); font-size: .95rem; }
 .plegable form, .plegable #hojas { margin-top: 12px; }
+.form-persona { max-width: 420px; }
 #hojas { display: grid; gap: 12px; font-size: .9rem; }
 #hojas .hoja { display: grid; gap: 6px; }
 #hojas .hoja-fila { display: flex; gap: 8px; }
@@ -246,8 +264,9 @@ button:disabled { opacity: .6; cursor: wait; }
 
 /* ---------- Listado ---------- */
 
-.listado-cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
-.totales { margin: 0 0 14px; color: var(--suave); font-size: .9rem; }
+.listado-cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px 16px; margin-bottom: 14px; }
+.listado-cabeza h1 { margin-bottom: 4px; }
+.totales { margin: 0; color: var(--suave); font-size: .9rem; }
 .totales b { color: var(--texto); font-variant-numeric: tabular-nums; }
 
 .filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -309,3 +328,51 @@ button:disabled { opacity: .6; cursor: wait; }
 
 .login { width: calc(100% - 32px); max-width: 380px; margin: 10vh auto 0; }
 .login p { color: var(--suave); margin: -8px 0 16px; font-size: .9rem; }
+
+/* ---------- Resumen ---------- */
+
+.resumen-cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.resumen-cabeza h1 { margin: 0; }
+#mensaje-excel:empty { display: none; }
+
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 900px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.kpi {
+  background: var(--tarjeta);
+  border: 1px solid var(--linea);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.kpi-titulo { font-size: .85rem; color: var(--suave); }
+.kpi-valor { font-size: 1.6rem; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi-detalle { font-size: .8rem; color: var(--suave); }
+
+.por-tipo { display: grid; gap: 20px; grid-template-columns: 1fr; }
+@media (min-width: 760px) { .por-tipo { grid-template-columns: 1fr 1fr; } }
+.tipo-resumen { display: grid; gap: 10px; }
+.tipo-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.tipo-cabeza h2 { margin: 0; }
+.tipo-resumen .cifras { display: flex; justify-content: space-between; gap: 8px; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.desglose { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 0; }
+.desglose div { background: var(--fondo); border-radius: 8px; padding: 8px 10px; }
+.desglose dt { font-size: .8rem; color: var(--suave); }
+.desglose dd { margin: 0; font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.tabla-envoltura { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.tabla th, .tabla td { padding: 9px 8px; border-bottom: 1px solid var(--linea); text-align: left; }
+.tabla th { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); font-weight: 600; }
+.tabla .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabla td.fecha { white-space: nowrap; color: var(--suave); }
+.tabla .insignia { margin-left: 0; }
+
+@media (max-width: 640px) {
+  .sync { justify-items: start; }
+  .tabla th:nth-child(3), .tabla td:nth-child(3) { display: none; }
+  .tabla th, .tabla td { padding: 8px 4px; }
+  .tabla { font-size: .88rem; }
+  .kpi-valor { font-size: 1.3rem; }
+}

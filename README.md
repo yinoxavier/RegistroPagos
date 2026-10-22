@@ -2,11 +2,13 @@
 
 Página para registrar los aportes de **Servidores (meta $59)** y **Participantes (meta $65)**. Las personas se cargan desde las hojas de Google Sheets de inscripción; cada pago se suma a su persona hasta llegar a la meta, y se envía un **recibo en PDF** con el total abonado y el saldo pendiente.
 
-La página (detrás de un inicio de sesión) tiene:
+La página (detrás de un inicio de sesión) tiene tres pestañas:
 
-- **Nuevo pago** (arriba): buscas a la persona por nombre, correo o cédula, ves cuánto le falta y registras el monto. No permite pasarse de la meta.
-- **Personas registradas** (arriba): conteo por tipo, botón **Sincronizar inscripciones**, alta manual y enlaces de las hojas.
-- **Listado de personas**: barra de avance de cada persona, total recaudado, filtros por tipo y estado, e historial de pagos con su PDF y estado del correo.
+- **Nuevo pago**: buscas a la persona por nombre, correo o cédula, ves cuánto le falta y registras el monto. No permite pasarse de la meta.
+- **Listado**: todas las personas con su rol, correo y barra de avance; filtros por rol y estado; historial de pagos con PDF y reenvío; botón **Sincronizar inscripciones**, alta manual y enlaces de las hojas.
+- **Resumen**: recaudado, por cobrar, personas y pagos; avance por rol (completos, abonando, sin pagos); últimos pagos; y **Descargar Excel**.
+
+El Excel se genera en el navegador con los datos del momento y trae 4 hojas: *Resumen*, *Servidores*, *Participantes* (meta, pagado, pendiente, avance, estado, n.º de pagos, último pago) y *Pagos* (recibo, fecha, persona, rol, monto y si se envió el recibo).
 
 ## Inscripciones desde Google Sheets
 

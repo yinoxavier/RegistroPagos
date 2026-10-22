@@ -24,15 +24,22 @@
   </section>
 
   <div id="app" hidden>
-    <header class="barra">
-      <strong>Registro de pagos</strong>
-      <button type="button" id="salir" class="enlace">Cerrar sesión</button>
+    <header class="cabecera">
+      <div class="cabecera-fila">
+        <strong>Registro de pagos</strong>
+        <button type="button" id="salir" class="enlace">Cerrar sesión</button>
+      </div>
+      <nav class="pestanas" aria-label="Secciones">
+        <a href="#pago" data-vista="pago">Nuevo pago</a>
+        <a href="#listado" data-vista="listado">Listado</a>
+        <a href="#resumen" data-vista="resumen">Resumen</a>
+      </nav>
     </header>
 
     <main>
-      <!-- ARRIBA: nuevo pago y personas registradas -->
-      <div class="arriba">
-        <section class="tarjeta" aria-labelledby="t-pago">
+      <!-- ============ NUEVO PAGO ============ -->
+      <section id="vista-pago" class="vista" aria-labelledby="t-pago">
+        <div class="tarjeta angosta">
           <h1 id="t-pago">Nuevo pago</h1>
           <form id="form-pago" novalidate>
             <div class="buscador">
@@ -64,26 +71,48 @@
             <button type="submit" class="primario">Registrar pago y enviar recibo</button>
             <p id="mensaje-pago" class="mensaje" role="status"></p>
           </form>
-        </section>
+        </div>
+      </section>
 
-        <section class="tarjeta" aria-labelledby="t-personas">
-          <h2 id="t-personas">Personas registradas</h2>
-          <div class="conteos" id="conteos"></div>
-
-          <button type="button" id="sincronizar" class="secundario ancho">Sincronizar inscripciones</button>
-          <small id="ultima-sync" class="suave"></small>
+      <!-- ============ LISTADO ============ -->
+      <section id="vista-listado" class="vista" aria-labelledby="t-listado" hidden>
+        <div class="tarjeta">
+          <div class="listado-cabeza">
+            <div>
+              <h1 id="t-listado">Listado</h1>
+              <p id="totales" class="totales"></p>
+            </div>
+            <div class="sync">
+              <button type="button" id="sincronizar" class="secundario">Sincronizar inscripciones</button>
+              <small id="ultima-sync" class="suave"></small>
+            </div>
+          </div>
           <div id="resultado-sync" class="resultado-sync" role="status"></div>
+
+          <div class="filtros">
+            <input id="filtro-texto" type="search" placeholder="Buscar por nombre, correo o cédula" autocomplete="off">
+            <div class="chips" role="group" aria-label="Rol" id="filtro-tipo"></div>
+            <select id="filtro-estado" aria-label="Estado">
+              <option value="todos">Todos los estados</option>
+              <option value="pendientes">Con saldo pendiente</option>
+              <option value="completos">Completos</option>
+              <option value="sin-pagos">Sin pagos</option>
+            </select>
+          </div>
+
+          <ul id="personas" class="personas"></ul>
+          <p id="vacio" class="vacio" hidden></p>
 
           <details class="plegable">
             <summary>Agregar persona manualmente</summary>
-            <form id="form-persona" novalidate>
+            <form id="form-persona" class="form-persona" novalidate>
               <label>Nombre completo
                 <input name="nombre" required maxlength="120" autocomplete="off">
               </label>
               <label>Correo
                 <input name="correo" type="email" required maxlength="200" autocomplete="off">
               </label>
-              <label>Tipo
+              <label>Rol
                 <select name="tipo" id="tipo-persona" required></select>
               </label>
               <button type="submit" class="secundario">Agregar</button>
@@ -95,29 +124,32 @@
             <summary>Hojas de inscripción</summary>
             <div id="hojas"></div>
           </details>
-        </section>
-      </div>
-
-      <!-- ABAJO: listado con avance -->
-      <section class="tarjeta" aria-labelledby="t-listado">
-        <div class="listado-cabeza">
-          <h2 id="t-listado">Listado de personas</h2>
-          <p id="totales" class="totales"></p>
         </div>
+      </section>
 
-        <div class="filtros">
-          <input id="filtro-texto" type="search" placeholder="Buscar en el listado" autocomplete="off">
-          <div class="chips" role="group" aria-label="Tipo" id="filtro-tipo"></div>
-          <select id="filtro-estado" aria-label="Estado">
-            <option value="todos">Todos</option>
-            <option value="pendientes">Con saldo pendiente</option>
-            <option value="completos">Completos</option>
-            <option value="sin-pagos">Sin pagos</option>
-          </select>
+      <!-- ============ RESUMEN ============ -->
+      <section id="vista-resumen" class="vista" aria-labelledby="t-resumen" hidden>
+        <div class="resumen-cabeza">
+          <h1 id="t-resumen">Resumen</h1>
+          <button type="button" id="descargar-excel" class="primario">Descargar Excel</button>
         </div>
+        <p id="mensaje-excel" class="mensaje" role="status"></p>
 
-        <ul id="personas" class="personas"></ul>
-        <p id="vacio" class="vacio" hidden></p>
+        <div id="kpis" class="kpis"></div>
+        <div id="por-tipo" class="por-tipo"></div>
+
+        <div class="tarjeta">
+          <h2>Últimos pagos</h2>
+          <div class="tabla-envoltura">
+            <table class="tabla">
+              <thead>
+                <tr><th>Fecha</th><th>Persona</th><th>Rol</th><th class="num">Monto</th><th>Correo</th></tr>
+              </thead>
+              <tbody id="ultimos-pagos"></tbody>
+            </table>
+          </div>
+          <p id="sin-pagos" class="vacio" hidden>Todavía no hay pagos registrados.</p>
+        </div>
       </section>
     </main>
   </div>
