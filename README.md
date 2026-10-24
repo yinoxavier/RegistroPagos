@@ -29,7 +29,7 @@ Cada envío reescribe la hoja completa, así que si alguno falla el siguiente la
 
 | Tipo | Meta | Hoja |
 |---|---|---|
-| Servidor | $59 | [Servidores](https://docs.google.com/spreadsheets/d/1IA87WD4Dlwt1LqdhSQDtIIXYXm0jZR5tNNgBXUyA8oI/edit) |
+| Servidor | $59 | [Servidores](https://docs.google.com/spreadsheets/d/1Co4GlurDtzjdpKdhbDtp49I_wBSczNKkBtG8kdcWY6E/edit) |
 | Participante | $65 | [Participantes](https://docs.google.com/spreadsheets/d/1bLsO7VhBll8oDmF2-H99thVayCqUTsa15P79t_hTUfY/edit) |
 
 - Las hojas deben estar compartidas como **"Cualquier persona con el enlace"** (lector).
