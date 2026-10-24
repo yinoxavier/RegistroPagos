@@ -24,7 +24,7 @@ export function parsearCsv(texto: string): string[][] {
   let fila: string[] = [];
   let celda = '';
   let comillas = false;
-  const s = texto.replace(/^﻿/, '');
+  const s = texto.replace(/^\uFEFF/, '');
 
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
@@ -44,7 +44,7 @@ export function parsearCsv(texto: string): string[][] {
 }
 
 const normalizar = (s: string) =>
-  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[¿?:*]/g, '').trim();
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[¿?:*]/g, '').trim();
 
 export interface Columnas {
   nombre: number;
