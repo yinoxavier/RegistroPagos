@@ -12,7 +12,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { formatearMonto, generarRecibo, numeroRecibo, type Avance, type Pago } from './recibo.ts';
 import { enviarRecibo } from './correo.ts';
-import { esTipo, validarImportacion, validarMonto, validarPersona } from './validar.ts';
+import { esTipo, personasRetiradas, validarImportacion, validarMonto, validarPersona } from './validar.ts';
 import { descargarHoja, idDesdeEnlace, leerInscripciones } from './hoja.ts';
 import { actualizarDrive } from './drive.ts';
 
@@ -105,7 +105,7 @@ async function crearPersona(body: Record<string, unknown>) {
   const { errores, datos } = validarPersona(body);
   if (errores.length) return json({ errores }, 400);
 
-  const { data, error } = await admin.from('personas').insert(datos).select('*').single();
+  const { data, error } = await admin.from('personas').insert({ ...datos, origen: 'manual' }).select('*').single();
   if (error?.code === '23505') {
     return json({ errores: [`Ya hay una persona registrada con el correo ${datos.correo}.`] }, 409);
   }
@@ -121,6 +121,8 @@ interface ResumenSincronizacion {
   creadas: number;
   actualizadas: number;
   sin_cambios: number;
+  eliminadas: number;
+  conservadas: { nombre: string; correo: string }[];
   omitidas: { fila: number; nombre: string; motivo: string }[];
   error?: string;
 }
@@ -129,7 +131,8 @@ interface ResumenSincronizacion {
 async function sincronizarTipo(tipo: { id: string; nombre: string; hoja_id: string; hoja_gid: string }):
   Promise<ResumenSincronizacion> {
   const resumen: ResumenSincronizacion = {
-    tipo: tipo.id, tipo_nombre: tipo.nombre, filas: 0, creadas: 0, actualizadas: 0, sin_cambios: 0, omitidas: [],
+    tipo: tipo.id, tipo_nombre: tipo.nombre, filas: 0, creadas: 0, actualizadas: 0, sin_cambios: 0,
+    eliminadas: 0, conservadas: [], omitidas: [],
   };
   try {
     const { columnas, filas } = leerInscripciones(await descargarHoja(tipo.hoja_id, tipo.hoja_gid));
@@ -143,6 +146,7 @@ async function sincronizarTipo(tipo: { id: string; nombre: string; hoja_id: stri
     }
     resumen.filas = filas.length;
     Object.assign(resumen, await guardarPersonas(tipo.id, filas));
+    Object.assign(resumen, await quitarAusentes(tipo.id, filas.map((f) => f.correo)));
     await admin.from('tipos').update({ sincronizado_en: new Date().toISOString() }).eq('id', tipo.id);
   } catch (e) {
     resumen.error = e instanceof Error ? e.message : String(e);
@@ -158,7 +162,7 @@ async function sincronizar() {
 
   const resultados = [];
   for (const t of tipos) resultados.push(await sincronizarTipo(t));
-  if (resultados.some((r) => r.creadas || r.actualizadas)) actualizarDriveLuego();
+  if (resultados.some((r) => r.creadas || r.actualizadas || r.eliminadas)) actualizarDriveLuego();
   return json({ resultados });
 }
 
@@ -225,6 +229,28 @@ async function guardarPersonas(tipo: string, filas: unknown[]) {
   }
 
   return { creadas: nuevas.length, actualizadas: cambios.length, sin_cambios: sinCambios, omitidas };
+}
+
+/** Quita las personas de la hoja que ya no aparecen en ella (las altas manuales no se tocan). */
+async function quitarAusentes(tipo: string, correosHoja: string[]) {
+  const { data: existentes, error } = await admin.from('personas')
+    .select('id, nombre, correo').eq('tipo', tipo).eq('origen', 'hoja');
+  if (error) throw new Error('No se pudo leer el listado actual.');
+
+  const conPagos = new Set<number>();
+  const ids = (existentes ?? []).map((p) => p.id);
+  for (let i = 0; i < ids.length; i += 500) {
+    const { data, error: e } = await admin.from('pagos').select('persona_id').in('persona_id', ids.slice(i, i + 500));
+    if (e) throw new Error('No se pudieron revisar los pagos.');
+    for (const g of data ?? []) conPagos.add(g.persona_id);
+  }
+
+  const { borrar, conservar } = personasRetiradas(existentes ?? [], correosHoja, conPagos);
+  for (let i = 0; i < borrar.length; i += 500) {
+    const { error: e } = await admin.from('personas').delete().in('id', borrar.slice(i, i + 500).map((p) => p.id));
+    if (e) throw new Error(`No se pudieron quitar personas: ${e.message}`);
+  }
+  return { eliminadas: borrar.length, conservadas: conservar.map((p) => ({ nombre: p.nombre, correo: p.correo })) };
 }
 
 async function registrarPago(body: Record<string, unknown>, usuarioId: string) {

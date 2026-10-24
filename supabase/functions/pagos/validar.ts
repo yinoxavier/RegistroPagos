@@ -79,3 +79,15 @@ export function validarMonto(valor: unknown): { error: string | null; centavos: 
   if (centavos <= 0) return { error: 'El monto debe ser mayor que 0.', centavos };
   return { error: null, centavos };
 }
+
+/**
+ * Personas sincronizadas que ya no están en la hoja.
+ * Las que tienen pagos no se borran (se perderían sus recibos): se devuelven aparte para avisar.
+ */
+export function personasRetiradas<T extends { id: number; correo: string }>(
+  existentes: T[], correosHoja: Iterable<string>, conPagos: Set<number>,
+): { borrar: T[]; conservar: T[] } {
+  const enHoja = new Set([...correosHoja].map((c) => c.trim().toLowerCase()).filter(Boolean));
+  const fuera = existentes.filter((p) => !enHoja.has(p.correo.trim().toLowerCase()));
+  return { borrar: fuera.filter((p) => !conPagos.has(p.id)), conservar: fuera.filter((p) => conPagos.has(p.id)) };
+}

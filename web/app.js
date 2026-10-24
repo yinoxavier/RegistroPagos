@@ -367,8 +367,15 @@ async function sincronizar({ silencioso = false } = {}) {
       const partes = [`${r.filas} inscrito${r.filas === 1 ? '' : 's'} en la hoja`];
       if (r.creadas) partes.push(`${r.creadas} nuevo${r.creadas === 1 ? '' : 's'}`);
       if (r.actualizadas) partes.push(`${r.actualizadas} actualizado${r.actualizadas === 1 ? '' : 's'}`);
-      const linea = el('div', { class: `linea${r.omitidas.length ? ' aviso' : ''}` },
+      if (r.eliminadas) partes.push(`${r.eliminadas} quitado${r.eliminadas === 1 ? '' : 's'} (ya no están en la hoja)`);
+      const conservadas = r.conservadas ?? [];
+      const linea = el('div', { class: `linea${r.omitidas.length || conservadas.length ? ' aviso' : ''}` },
         el('strong', { text: `${r.tipo_nombre}: ` }), partes.join(' · '));
+
+      if (conservadas.length) {
+        linea.append(el('div', { text: `${conservadas.length} ya no están en la hoja pero tienen pagos, así que se mantienen:` }),
+          el('ul', {}, ...conservadas.slice(0, 15).map((c) => el('li', { text: `${c.nombre} (${c.correo})` }))));
+      }
 
       if (r.omitidas.length) {
         linea.append(el('div', { text: `${r.omitidas.length} no se cargaron:` }),
@@ -729,9 +736,8 @@ supabase.auth.onAuthStateChange((_evento, session) => {
     irA(location.hash.slice(1) || 'pago');
     setTimeout(async () => {
       await cargar();
-      // Sincroniza solo si pasaron más de 15 minutos desde la última vez
-      const ultima = estado.tipos.map((t) => t.sincronizado_en).filter(Boolean).sort().at(-1);
-      if (!ultima || Date.now() - new Date(ultima).getTime() > 15 * 60000) sincronizar({ silencioso: true });
+      // Cada vez que se abre o se recarga la página, trae altas y bajas de las hojas
+      sincronizar({ silencioso: true });
     }, 0);
   } else if (!session) {
     iniciado = false;

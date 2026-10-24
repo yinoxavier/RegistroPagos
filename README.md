@@ -35,8 +35,8 @@ Cada envío reescribe la hoja completa, así que si alguno falla el siguiente la
 - Las hojas deben estar compartidas como **"Cualquier persona con el enlace"** (lector).
 - Se reconocen las columnas por su título: *Nombre completo*, *Correo electrónico*, *Cédula*, *WhatsApp*.
 - Cada persona se identifica por su **correo**; las filas sin correo no se cargan y la página lo avisa.
-- Al sincronizar de nuevo se agregan las personas nuevas y se actualizan nombre, cédula y WhatsApp.
-- La página sincroniza sola al entrar si pasaron más de 15 minutos.
+- Al sincronizar se agregan las personas nuevas, se actualizan nombre, cédula y WhatsApp, y **se quitan las que ya no están en la hoja** (las que tienen pagos se conservan y la página lo avisa; las altas manuales no se tocan).
+- La página sincroniza sola cada vez que se abre o se recarga.
 - Las metas están en la tabla `tipos` (cambiarlas ahí las cambia para todos).
 
 ## Cómo está armado

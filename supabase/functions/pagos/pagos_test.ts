@@ -153,3 +153,15 @@ Deno.test('una hoja vacía no es un error', () => {
   assertEquals(leerInscripciones(',,,\n,,,\n').filas, []);
   assertEquals(leerInscripciones('Fecha,Nombre completo,Correo electrónico\n').filas, []);
 });
+
+import { personasRetiradas } from './validar.ts';
+
+Deno.test('quita a quienes ya no están en la hoja, salvo si tienen pagos', () => {
+  const existentes = [
+    { id: 1, correo: 'ana@x.com' }, { id: 2, correo: 'luis@x.com' }, { id: 3, correo: 'zoe@x.com' },
+  ];
+  const r = personasRetiradas(existentes, ['ANA@x.com ', ''], new Set([3]));
+  assertEquals(r.borrar.map((p) => p.id), [2]);
+  assertEquals(r.conservar.map((p) => p.id), [3]);
+  assertEquals(personasRetiradas(existentes, [], new Set()).borrar.length, 3); // hoja vacía: se quitan todas
+});
