@@ -1,7 +1,7 @@
 // Pruebas locales: deno test --allow-env --allow-write --allow-read --allow-sys supabase/functions/pagos
 import { deepStrictEqual as assertEquals } from 'node:assert';
 import { validarImportacion, validarMonto, validarPersona } from './validar.ts';
-import { formatearMonto, generarRecibo, numeroRecibo, type Avance, type Pago } from './recibo.ts';
+import { establecerLogo, formatearMonto, generarRecibo, numeroRecibo, type Avance, type Pago } from './recibo.ts';
 import { armarMensaje, datosNodemailer } from './correo.ts';
 import nodemailer from 'npm:nodemailer@6.10.1';
 
@@ -44,12 +44,16 @@ Deno.test('formatea número de recibo y monto', () => {
 });
 
 Deno.test('genera recibos con y sin avance, con tildes y emojis', async () => {
+  establecerLogo(await Deno.readFile(new URL('../../../web/logo-blanco.png', import.meta.url)));
   const conAvance = await generarRecibo({ ...pago, nombre: 'Juan Ñúñez' }, avance);
   assertEquals(new TextDecoder().decode(conAvance.slice(0, 5)), '%PDF-');
   const completo = await generarRecibo({ ...pago, nombre: 'Ana 🙏 Łukasz' }, { ...avance, acumuladoCentavos: 5900 });
   assertEquals(completo.length > 0, true);
   const sinAvance = await generarRecibo(pago);
   assertEquals(sinAvance.length > 0, true);
+  establecerLogo(new Uint8Array([1, 2, 3])); // logo dañado: debe caer al texto sin fallar
+  assertEquals((await generarRecibo(pago)).length > 0, true);
+  establecerLogo(await Deno.readFile(new URL('../../../web/logo-blanco.png', import.meta.url)));
   const salida = Deno.env.get('RECIBO_SALIDA');
   if (salida) await Deno.writeFile(salida, conAvance);
 });

@@ -1,5 +1,26 @@
 import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
 
+// Logo blanco publicado junto a la página (GitHub Pages). Se descarga una vez y queda en memoria.
+const LOGO_URL = Deno.env.get('LOGO_URL') ?? 'https://yinoxavier.github.io/RegistroPagos/logo-blanco.png';
+let logoBytes: Uint8Array | null = null;
+
+/** Permite fijar el logo sin descargarlo (pruebas). */
+export function establecerLogo(bytes: Uint8Array | null) {
+  logoBytes = bytes;
+}
+
+async function cargarLogo(): Promise<Uint8Array | null> {
+  if (logoBytes) return logoBytes;
+  try {
+    const res = await fetch(LOGO_URL, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    logoBytes = new Uint8Array(await res.arrayBuffer());
+    return logoBytes;
+  } catch {
+    return null; // sin logo: el encabezado muestra el nombre en texto
+  }
+}
+
 export interface Pago {
   id: number;
   nombre: string;
@@ -54,6 +75,7 @@ const AZUL = hex('#1f3a5f');
 const GRIS = hex('#5b6573');
 const LINEA = hex('#d9dee5');
 const FONDO = hex('#f3f6fa');
+const DORADO = hex('#d6af12');
 const NEGRO = rgb(0, 0, 0);
 const BLANCO = rgb(1, 1, 1);
 
@@ -75,10 +97,25 @@ export async function generarRecibo(pago: Pago, avance?: Avance): Promise<Uint8A
   const derecha = (texto: string, size: number, font = normal) =>
     M + ancho - font.widthOfTextAtSize(texto, size);
 
-  // Encabezado
+  // Encabezado: logo a la izquierda, tipo de documento y evento a la derecha
   page.drawRectangle({ x: 0, y: H - 110, width: W, height: 110, color: AZUL });
-  page.drawText(ORGANIZACION, { x: M, y: top(38, 20), size: 20, font: negrita, color: BLANCO });
-  page.drawText(`Recibo de pago · ${EVENTO}`, { x: M, y: top(68, 11), size: 11, font: normal, color: BLANCO });
+  page.drawRectangle({ x: 0, y: H - 114, width: W, height: 4, color: DORADO });
+  const bytesLogo = await cargarLogo();
+  let conLogo = false;
+  if (bytesLogo) {
+    try {
+      const logo = await pdf.embedPng(bytesLogo);
+      const altoLogo = 54;
+      const anchoLogo = (logo.width / logo.height) * altoLogo;
+      page.drawImage(logo, { x: M, y: H - 55 - altoLogo / 2, width: anchoLogo, height: altoLogo });
+      conLogo = true;
+    } catch { /* archivo inválido: se usa el texto */ }
+  }
+  if (!conLogo) {
+    page.drawText(ORGANIZACION, { x: M, y: top(46, 18), size: 18, font: negrita, color: BLANCO });
+  }
+  page.drawText('RECIBO DE PAGO', { x: derecha('RECIBO DE PAGO', 13, negrita), y: top(40, 13), size: 13, font: negrita, color: BLANCO });
+  page.drawText(EVENTO, { x: derecha(EVENTO, 12), y: top(60, 12), size: 12, font: normal, color: DORADO });
 
   // Número y fecha
   const fecha = formatearFecha(pago.fecha);
