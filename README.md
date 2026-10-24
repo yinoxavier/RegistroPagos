@@ -29,8 +29,8 @@ Cada envío reescribe la hoja completa, así que si alguno falla el siguiente la
 
 | Tipo | Meta | Hoja |
 |---|---|---|
-| Servidor | $59 | [Servidores](https://docs.google.com/spreadsheets/d/1dtkJr1WRAuIB5QBrGGqlxNc2ymjEZu5yD7XXxB46jUY/edit) |
-| Participante | $65 | [Participantes](https://docs.google.com/spreadsheets/d/18RqPzRz_l3pzfRHIs0Ad17i1vZ9dlipj5WxjrvinYYM/edit) |
+| Servidor | $59 | [Servidores](https://docs.google.com/spreadsheets/d/1IA87WD4Dlwt1LqdhSQDtIIXYXm0jZR5tNNgBXUyA8oI/edit) |
+| Participante | $65 | [Participantes](https://docs.google.com/spreadsheets/d/1bLsO7VhBll8oDmF2-H99thVayCqUTsa15P79t_hTUfY/edit) |
 
 - Las hojas deben estar compartidas como **"Cualquier persona con el enlace"** (lector).
 - Se reconocen las columnas por su título: *Nombre completo*, *Correo electrónico*, *Cédula*, *WhatsApp*.

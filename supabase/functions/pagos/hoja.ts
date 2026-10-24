@@ -76,11 +76,18 @@ export function detectarColumnas(encabezados: string[]): Columnas {
 
 /** Convierte el CSV en filas de inscripción (omite filas totalmente vacías). */
 export function leerInscripciones(csv: string): { columnas: Columnas; filas: FilaInscripcion[] } {
+  // Ignorar filas totalmente vacías al inicio (hoja nueva sin respuestas)
   const tabla = parsearCsv(csv);
-  if (tabla.length === 0) throw new Error('La hoja está vacía.');
+  while (tabla.length && tabla[0].every((c) => c.trim() === '')) tabla.shift();
+  const sinColumnas: Columnas = { nombre: -1, apellido: -1, correo: -1, cedula: -1, whatsapp: -1 };
+  if (tabla.length === 0) return { columnas: sinColumnas, filas: [] }; // hoja vacía: nada que cargar
 
   const columnas = detectarColumnas(tabla[0]);
-  if (columnas.nombre < 0) throw new Error('No encontré la columna de nombre en la hoja.');
+  const hayDatos = tabla.slice(1).some((f) => f.some((c) => c.trim() !== ''));
+  if (columnas.nombre < 0) {
+    if (!hayDatos) return { columnas, filas: [] };
+    throw new Error('No encontré la columna "Nombre completo" en la hoja.');
+  }
 
   const celda = (f: string[], i: number) => (i >= 0 ? (f[i] ?? '').trim() : '');
   const filas: FilaInscripcion[] = [];

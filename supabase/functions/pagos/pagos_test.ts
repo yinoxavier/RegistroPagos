@@ -147,3 +147,9 @@ Deno.test('arma las pestañas para la hoja de Drive', () => {
     h.filas.forEach((f) => assertEquals(f.length, h.encabezados.length));
   }
 });
+
+Deno.test('una hoja vacía no es un error', () => {
+  assertEquals(leerInscripciones('').filas, []);
+  assertEquals(leerInscripciones(',,,\n,,,\n').filas, []);
+  assertEquals(leerInscripciones('Fecha,Nombre completo,Correo electrónico\n').filas, []);
+});
