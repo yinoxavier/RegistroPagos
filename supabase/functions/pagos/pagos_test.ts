@@ -59,10 +59,11 @@ Deno.test('arma el correo con el PDF adjunto y el saldo', async () => {
   const m = armarMensaje(pago, pdf, avance);
   assertEquals(m.html.includes('José &lt;Pérez&gt;'), true);
   assertEquals(m.html.includes('Saldo pendiente: <strong>$19.00 USD</strong>'), true);
-  assertEquals(m.html.includes('corresponde a tu aporte para el <strong>Camps 2027</strong>'), true);
+  assertEquals(/Hemos recibido tu pago de <strong>\$10\.00 USD<\/strong> para el\s+<strong>Camps 2027<\/strong>/.test(m.html), true);
+  assertEquals(m.html.includes('Nota:'), false);
   assertEquals(m.asunto, 'Recibo de pago N.º 000007 - Camps 2027 - Comunidad Católica Shalom');
   const fin = armarMensaje(pago, pdf, { ...avance, acumuladoCentavos: 5900 });
-  assertEquals(fin.html.includes('completaste tu aporte'), true);
+  assertEquals(fin.html.includes('completaste tu aporte de $59.00 USD para el Camps 2027'), true);
 
   const t = nodemailer.createTransport({ streamTransport: true, buffer: true });
   const info = await t.sendMail(datosNodemailer(m, 'recibos@gmail.com'));

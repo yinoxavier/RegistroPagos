@@ -21,7 +21,7 @@ export function armarMensaje(pago: Pago, pdf: Uint8Array, avance?: Avance): Mens
   if (avance) {
     const pendiente = saldo(avance);
     resumen = pendiente === 0
-      ? `<p>Con este pago completaste tu aporte de ${formatearMonto(avance.metaCentavos)}. ¡Muchas gracias!</p>`
+      ? `<p>Con este pago completaste tu aporte de ${formatearMonto(avance.metaCentavos)} para el ${escapar(EVENTO)}. ¡Muchas gracias!</p>`
       : `<p>Llevas abonado ${formatearMonto(avance.acumuladoCentavos)} de ${formatearMonto(avance.metaCentavos)}.
            Saldo pendiente: <strong>${formatearMonto(pendiente)}</strong>.</p>`;
   }
@@ -30,12 +30,9 @@ export function armarMensaje(pago: Pago, pdf: Uint8Array, avance?: Avance): Mens
     asunto: `Recibo de pago N.º ${numero} - ${EVENTO} - ${ORGANIZACION}`,
     html: `
       <p>Hola ${escapar(pago.nombre)},</p>
-      <p>Hemos recibido tu pago por <strong>${formatearMonto(pago.monto_centavos)}</strong>.
-         Adjuntamos tu recibo N.º ${numero}.</p>
+      <p>Hemos recibido tu pago de <strong>${formatearMonto(pago.monto_centavos)}</strong> para el
+         <strong>${escapar(EVENTO)}</strong>. Adjuntamos tu recibo N.º ${numero}.</p>
       ${resumen}
-      <p style="padding:10px 12px;background:#f3f6fa;border-left:4px solid #1f3a5f;">
-        <strong>Nota:</strong> este recibo corresponde a tu aporte para el <strong>${escapar(EVENTO)}</strong>.
-      </p>
       <p>¡Gracias!<br>${escapar(ORGANIZACION)}</p>`,
     adjunto: { nombre: `recibo-${numero}.pdf`, contenido: pdf },
   };
